@@ -1,0 +1,110 @@
+-- Drop existing tables and sequences if they exist
+BEGIN
+   EXECUTE IMMEDIATE 'DROP TABLE Sales_History';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN
+         RAISE;
+      END IF;
+END;
+/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP TABLE Pricing_Rules';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN
+         RAISE;
+      END IF;
+END;
+/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP TABLE Products';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN
+         RAISE;
+      END IF;
+END;
+/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP TABLE Users';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN
+         RAISE;
+      END IF;
+END;
+/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP SEQUENCE sales_history_seq';
+   EXECUTE IMMEDIATE 'DROP SEQUENCE pricing_rules_seq';
+   EXECUTE IMMEDIATE 'DROP SEQUENCE products_seq';
+   EXECUTE IMMEDIATE 'DROP SEQUENCE users_seq';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -2289 THEN
+         RAISE;
+      END IF;
+END;
+/
+
+-- Create Table for User Authentication
+CREATE TABLE Users (
+    user_id NUMBER PRIMARY KEY,
+    username VARCHAR2(50) NOT NULL UNIQUE,
+    password VARCHAR2(255) NOT NULL,
+    role VARCHAR2(20) NOT NULL CHECK (role IN ('ADMIN', 'MANAGER'))
+);
+
+-- Create Table to Store Product Information
+CREATE TABLE Products (
+    product_id NUMBER PRIMARY KEY,
+    name VARCHAR2(100) NOT NULL,
+    description VARCHAR2(500),
+    base_price NUMBER(10, 2) NOT NULL,
+    current_price NUMBER(10, 2) NOT NULL,
+    stock_quantity NUMBER NOT NULL
+);
+
+-- Create Table to Define the Dynamic Pricing Rules
+CREATE TABLE Pricing_Rules (
+    rule_id NUMBER PRIMARY KEY,
+    rule_name VARCHAR2(100) NOT NULL,
+    condition_field VARCHAR2(50) NOT NULL,
+    condition_operator VARCHAR2(10) NOT NULL,
+    condition_value NUMBER NOT NULL,
+    action_type VARCHAR2(50) NOT NULL,
+    action_value NUMBER(5, 2) NOT NULL,
+    is_active NUMBER(1) DEFAULT 1 NOT NULL
+);
+
+-- Create Table to Track Sales History
+CREATE TABLE Sales_History (
+    sale_id NUMBER PRIMARY KEY,
+    product_id NUMBER NOT NULL,
+    quantity_sold NUMBER NOT NULL,
+    price_at_sale NUMBER(10, 2) NOT NULL,
+    sale_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_product_sales FOREIGN KEY (product_id) REFERENCES Products(product_id)
+);
+
+-- Create sequences to auto-increment the primary keys
+CREATE SEQUENCE users_seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE products_seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE pricing_rules_seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE sales_history_seq START WITH 1 INCREMENT BY 1;
+
+-- Insert a default Admin user
+INSERT INTO Users (user_id, username, password, role) VALUES (users_seq.nextval, 'admin', 'admin123', 'ADMIN');
+
+-- Insert Sample Products
+INSERT INTO Products (product_id, name, description, base_price, current_price, stock_quantity)
+VALUES (products_seq.nextval, 'Wireless Mouse', 'A high-precision wireless optical mouse.', 2500.00, 2500.00, 80);
+
+INSERT INTO Products (product_id, name, description, base_price, current_price, stock_quantity)
+VALUES (products_seq.nextval, 'Mechanical Keyboard', 'A backlit mechanical keyboard with blue switches.', 5000.00, 5000.00, 45);
+
+INSERT INTO Products (product_id, name, description, base_price, current_price, stock_quantity)
+VALUES (products_seq.nextval, '4K Webcam', 'A 4K resolution webcam with a built-in microphone.', 7000.00, 7000.00, 15);
+
+COMMIT;
